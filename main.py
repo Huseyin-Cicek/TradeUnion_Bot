@@ -1,15 +1,33 @@
 import telebot
+from telebot import types
 
 TOKEN = '6781150801:AAHauw6N7LAtxrvtdL7w-GaDPYijFqtEW6Y'
 
 bot = telebot.TeleBot(TOKEN)
 
 
+def create_categories():
+    keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    button1 = types.KeyboardButton('Материальная помощь')
+    button2 = types.KeyboardButton('Профсоюз')
+    button3 = types.KeyboardButton('Контакты')
+    keyboard.add(button1, button2, button3)
+    return keyboard
+
+def create_material_aid():
+    keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    button1 = types.KeyboardButton('Бюджет Институт')
+    button2 = types.KeyboardButton('Бюджет Университет')
+    button3 = types.KeyboardButton('Контракт')
+    keyboard.add(button1, button2, button3)
+    return keyboard
+
 @bot.message_handler(commands=['start'])
 def handle_start(message):
-    bot.send_message(message.chat.id, "Привет! Я бот с ответами на частозадаваемые вопросы"
-                                      ", связанные с материальной помощью и работой профсоюза.")
-    bot.send_message(message.chat.id, "Чтобы узнать список доступных вопросов, введи /help")
+    # Отправляем приветственное сообщение с клавиатурой
+    bot.send_message(message.chat.id, "Привет! Я бот с ответами на частозадаваемые вопросы, "
+                                      "связанные с материальной помощью и профсоюзом.",
+                     reply_markup=create_categories())
 
 
 @bot.message_handler(func=lambda message: True)
@@ -54,6 +72,9 @@ def handle_text(message):
 
     elif "скачать памятку" in message.text.lower():
         send_handbook(message)
+
+    elif "материальная помощь" in message.text.lower():
+        bot.send_message(message.chat.id, "Вопросы про матпомощь:", reply_markup=create_material_aid())
 
     else:
         bot.send_message(message.chat.id, "Извините, не могу понять ваш вопрос. Попробуйте другой.")
