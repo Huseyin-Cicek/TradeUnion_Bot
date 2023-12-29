@@ -233,7 +233,7 @@ def get_chat_id(message):
 
 @bot.message_handler(commands=['start'])
 def handle_start(message):
-        bot.send_message(message.chat.id, "Привет! Я бот с ответами на частозадаваемые вопросы, "
+        bot.send_message(message.chat.id, "Привет! Я бот с ответами на часто задаваемые вопросы, "
                                           "связанные с материальной помощью и профсоюзом.",
                          reply_markup=create_categories())
 
