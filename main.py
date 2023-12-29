@@ -3,6 +3,8 @@ from telebot import types
 
 TOKEN = '6781150801:AAHauw6N7LAtxrvtdL7w-GaDPYijFqtEW6Y'
 
+admin_user_id = 741705263
+
 bot = telebot.TeleBot(TOKEN)
 
 budget_inst = {
@@ -164,10 +166,14 @@ contacts = {
             "\nЭлектронная почта: l.v.lomyskina@urfu.ru"
 }
 
+custom_questions = {
+    "Когда стипа?": "Завтра"
+}
+
 
 def create_categories():
     keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
-    keyboard.add('Материальная помощь', 'Профсоюз', 'Контакты')
+    keyboard.add('Материальная помощь', 'Профсоюз', 'Контакты', 'Другие вопросы')
     return keyboard
 
 
@@ -213,11 +219,104 @@ def create_aid_types():
     return keyboard
 
 
+def create_custom_questions():
+    keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    keyboard.add(*custom_questions.keys())
+    keyboard.add('Назад')
+    return keyboard
+
+
+@bot.message_handler(commands=['get_chat_id'])
+def get_chat_id(message):
+    bot.send_message(message.chat.id, f"Ваш Chat ID: {message.chat.id}")
+
+
 @bot.message_handler(commands=['start'])
 def handle_start(message):
-    bot.send_message(message.chat.id, "Привет! Я бот с ответами на частозадаваемые вопросы, "
-                                      "связанные с материальной помощью и профсоюзом.",
-                     reply_markup=create_categories())
+        bot.send_message(message.chat.id, "Привет! Я бот с ответами на частозадаваемые вопросы, "
+                                          "связанные с материальной помощью и профсоюзом.",
+                         reply_markup=create_categories())
+
+
+@bot.message_handler(commands=['promote'])
+def promote_user(message):
+    if message.chat.id == admin_user_id:
+        if message.reply_to_message and message.reply_to_message.from_user:
+            user_id = message.reply_to_message.from_user.id
+            bot.send_message(message.chat.id, f"Пользователь {user_id} назначен администратором.")
+        else:
+            bot.send_message(message.chat.id, "Ответьте на сообщение пользователя, которого вы хотите назначить администратором.")
+    else:
+        bot.send_message(message.chat.id, "У вас нет прав для выполнения этой команды.")
+
+
+@bot.message_handler(commands=['admin'])
+def handle_add_question(message):
+    if message.chat.id == admin_user_id:
+        keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+        keyboard.add('/add_question')
+        keyboard.add('/delete_question')
+        keyboard.add('Назад')
+        bot.send_message(message.chat.id,
+                         "Привет, администратор! \nИспользуйте /add_question для добавления нового вопроса."
+                         "\nЧтобы удалить вопрос используйте /delete_question", reply_markup=keyboard)
+    else:
+        bot.send_message(message.chat.id, "У вас нет прав для выполнения этой команды.")
+
+
+@bot.message_handler(commands=['add_question'])
+def handle_add_question(message):
+    if message.chat.id == admin_user_id:
+        keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+        keyboard.add('Отмена')
+        bot.send_message(message.chat.id, "Введите новый вопрос:", reply_markup=keyboard)
+        bot.register_next_step_handler(message, process_new_question)
+    else:
+        bot.send_message(message.chat.id, "У вас нет прав для выполнения этой команды.")
+
+
+@bot.message_handler(commands=['delete_question'], func=lambda message: message.text)
+def delete_question(message):
+    if message.from_user.id == admin_user_id:
+        keyboard = create_delete_question_menu()
+        bot.send_message(message.chat.id, "Выберите вопрос для удаления:", reply_markup=keyboard)
+        bot.register_next_step_handler(message, delete_question_choice)
+    else:
+        bot.send_message(message.chat.id, "У вас нет прав для выполнения этой команды.")
+
+
+def create_delete_question_menu():
+    keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    keyboard.add(*custom_questions.keys())
+    keyboard.add('Отмена')
+    return keyboard
+
+
+def delete_question_choice(message):
+    if message.from_user.id == admin_user_id:
+        if message.text == 'Отмена':
+            bot.send_message(message.chat.id, "Удаление вопроса отменено.", reply_markup=create_categories())
+        else:
+            question_to_delete = message.text
+            del custom_questions[question_to_delete]
+            bot.send_message(message.chat.id, f"Вопрос '{question_to_delete}' успешно удален.", reply_markup=create_categories())
+    else:
+        bot.send_message(message.chat.id, "У вас нет прав для выполнения этой команды.")
+
+
+def process_new_question(message):
+    new_question = message.text
+    if new_question == 'Отмена':
+        bot.send_message(message.chat.id, "Добавление вопроса отменено.", reply_markup=create_categories())
+    else:
+        bot.send_message(message.chat.id, "Введите ответ на вопрос:")
+        bot.register_next_step_handler(message, lambda m: process_new_answer(m, new_question))
+
+
+def process_new_answer(message, new_question):
+    new_answer = message.text
+    custom_questions[new_question] = new_answer
+    bot.send_message(message.chat.id, "Новый вопрос и ответ успешно добавлены.", reply_markup=create_categories())
 
 
 @bot.message_handler(func=lambda message: True)
@@ -241,6 +340,9 @@ def handle_text(message):
     elif user_input in contacts:
         bot.send_message(message.chat.id, contacts[user_input])
 
+    elif user_input in custom_questions:
+        bot.send_message(message.chat.id, custom_questions[user_input])
+
     elif "Материальная помощь" in user_input:
         bot.send_message(message.chat.id, "Выберите тип матпомощи:", reply_markup=create_aid_types())
 
@@ -258,6 +360,9 @@ def handle_text(message):
 
     elif "Контакты" in user_input:
         bot.send_message(message.chat.id, "Контакты", reply_markup=create_contacts())
+
+    elif "Другие вопросы" in user_input:
+        bot.send_message(message.chat.id, "Другие вопросы", reply_markup=create_custom_questions())
 
     elif "Назад" in user_input:
         bot.send_message(message.chat.id, "Возврат на главную", reply_markup=create_categories())
