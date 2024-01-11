@@ -44,7 +44,7 @@ def create_categories():
 
 
 def create_trade_union():
-    keyboard = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    keyboard = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
     keyboard.add(*trade_union.keys())
     keyboard.add('Назад')
     return keyboard
@@ -186,53 +186,117 @@ def process_new_answer(message, new_question):
     conn.commit()
     conn.close()
 
-    bot.send_message(message.chat.id, "Новый вопрос и ответ успешно добавлены.", reply_markup=create_categories())
+    bot.send_message(message.chat.id, 'Новый вопрос и ответ успешно добавлены в категорию "Другие вопросы".', reply_markup=create_categories())
+
+
+def handle_budget_inst_question(message):
+    user_input = message.text
+    if user_input in budget_inst:
+        bot.send_message(message.chat.id, budget_inst[user_input])
+        if "Причины и документы" in user_input:
+            send_handbook(message)
+        bot.register_next_step_handler(message, handle_budget_inst_question)
+    elif "Назад" in user_input:
+        bot.send_message(message.chat.id, "Возврат на главную", reply_markup=create_categories())
+    else:
+        bot.send_message(message.chat.id, "Вопрос не найден в категории 'Бюджет институт'.")
+        bot.register_next_step_handler(message, handle_budget_inst_question)
+
+
+def handle_budget_univ_question(message):
+    user_input = message.text
+    if user_input in budget_univ:
+        bot.send_message(message.chat.id, budget_univ[user_input])
+        if "Причины и документы" in user_input:
+            send_handbook(message)
+        bot.register_next_step_handler(message, handle_budget_univ_question)
+    elif "Назад" in user_input:
+        bot.send_message(message.chat.id, "Возврат на главную", reply_markup=create_categories())
+    else:
+        bot.send_message(message.chat.id, "Вопрос не найден в категории 'Бюджет университет'.")
+        bot.register_next_step_handler(message, handle_budget_univ_question)
+
+
+def handle_contract_question(message):
+    user_input = message.text
+    if user_input in contract:
+        bot.send_message(message.chat.id, contract[user_input])
+        if "Причины и документы" in user_input:
+            send_handbook(message)
+        bot.register_next_step_handler(message, handle_contract_question)
+    elif "Назад" in user_input:
+        bot.send_message(message.chat.id, "Возврат на главную", reply_markup=create_categories())
+    else:
+        bot.send_message(message.chat.id, "Вопрос не найден в категории 'Контракт'.")
+        bot.register_next_step_handler(message, handle_contract_question)
+
+
+def handle_trade_union_question(message):
+    user_input = message.text
+    if user_input in trade_union:
+        bot.send_message(message.chat.id, trade_union[user_input])
+        bot.register_next_step_handler(message, handle_trade_union_question)
+    elif "Назад" in user_input:
+        bot.send_message(message.chat.id, "Возврат на главную", reply_markup=create_categories())
+    else:
+        bot.send_message(message.chat.id, "Вопрос не найден в категории 'Профсоюз'.")
+        bot.register_next_step_handler(message, handle_trade_union_question)
+
+
+def handle_contacts_question(message):
+    user_input = message.text
+    if user_input in contacts:
+        bot.send_message(message.chat.id, contacts[user_input])
+        bot.register_next_step_handler(message, handle_contacts_question)
+    elif "Назад" in user_input:
+        bot.send_message(message.chat.id, "Возврат на главную", reply_markup=create_categories())
+    else:
+        bot.send_message(message.chat.id, "Вопрос не найден в категории 'Контакты'.")
+        bot.register_next_step_handler(message, handle_contacts_question)
+
+
+def handle_custom_question(message):
+    user_input = message.text
+    if user_input in custom_questions:
+        bot.send_message(message.chat.id, custom_questions[user_input])
+        bot.register_next_step_handler(message, handle_custom_question)
+    elif "Назад" in user_input:
+        bot.send_message(message.chat.id, "Возврат на главную", reply_markup=create_categories())
+    else:
+        bot.send_message(message.chat.id, "Вопрос не найден в категории 'Другие вопросы'.")
+        bot.register_next_step_handler(message, handle_custom_question)
 
 
 @bot.message_handler(func=lambda message: True)
 def handle_text(message):
     user_input = message.text
 
-    if user_input in budget_inst:
-        bot.send_message(message.chat.id, budget_inst[user_input])
-        if "Причины и документы" in user_input:
-            send_handbook(message)
+    if user_input == 'Бюджет Институт':
+        bot.send_message(message.chat.id, "Информация о матпомощи в институте для бюджетников", reply_markup=create_budget_inst())
+        bot.register_next_step_handler(message, handle_budget_inst_question)
 
-    elif user_input in budget_univ:
-        bot.send_message(message.chat.id, budget_univ[user_input])
+    elif user_input == 'Бюджет Университет':
+        bot.send_message(message.chat.id, "Информация о матпомощи в университете для бюджетников", reply_markup=create_budget_univ())
+        bot.register_next_step_handler(message, handle_budget_univ_question)
 
-    elif user_input in contract:
-        bot.send_message(message.chat.id, contract[user_input])
+    elif user_input == 'Контракт':
+        bot.send_message(message.chat.id, "Информация о матпомощи для контрактников", reply_markup=create_contract())
+        bot.register_next_step_handler(message, handle_contract_question)
 
-    elif user_input in trade_union:
-        bot.send_message(message.chat.id, trade_union[user_input])
+    elif user_input == 'Профсоюз':
+        bot.send_message(message.chat.id, "Информация о профсоюзе", reply_markup=create_trade_union())
+        bot.register_next_step_handler(message, handle_trade_union_question)
 
-    elif user_input in contacts:
-        bot.send_message(message.chat.id, contacts[user_input])
+    elif user_input == 'Контакты':
+        bot.send_message(message.chat.id, "Контакты", reply_markup=create_contacts())
+        bot.register_next_step_handler(message, handle_contacts_question)
 
-    elif user_input in custom_questions:
-        bot.send_message(message.chat.id, custom_questions[user_input])
+    elif user_input == 'Другие вопросы':
+        bot.send_message(message.chat.id, "Другие вопросы", reply_markup=create_custom_questions())
+        bot.register_next_step_handler(message, handle_custom_question)
 
     elif "Материальная помощь" in user_input:
         bot.send_message(message.chat.id, "Выберите тип матпомощи:", reply_markup=create_aid_types())
-
-    elif "Профсоюз" in user_input:
-        bot.send_message(message.chat.id, "Информация о профсоюзе", reply_markup=create_trade_union())
-
-    elif "Бюджет Институт" in user_input:
-        bot.send_message(message.chat.id, "Информация о матпомощи в институте для бюджетников", reply_markup=create_budget_inst())
-
-    elif "Бюджет Университет" in user_input:
-        bot.send_message(message.chat.id, "Информация о матпомощи в университете для бюджетников", reply_markup=create_budget_univ())
-
-    elif "Контракт" in user_input:
-        bot.send_message(message.chat.id, "Информация о матпомощи для контрактников", reply_markup=create_contract())
-
-    elif "Контакты" in user_input:
-        bot.send_message(message.chat.id, "Контакты", reply_markup=create_contacts())
-
-    elif "Другие вопросы" in user_input:
-        bot.send_message(message.chat.id, "Другие вопросы", reply_markup=create_custom_questions())
 
     elif "Назад" in user_input:
         bot.send_message(message.chat.id, "Возврат на главную", reply_markup=create_categories())
@@ -242,8 +306,11 @@ def handle_text(message):
 
 
 def send_handbook(message):
-    with open('Obnovlennaya_pamyatka_po_matpomoschi.pdf', 'rb') as handbook:
-        bot.send_document(message.chat.id, handbook, caption="Вот ваша памятка!")
+    try:
+        with open('Obnovlennaya_pamyatka_po_matpomoschi.pdf', 'rb') as handbook:
+            bot.send_document(message.chat.id, handbook, caption="Вот ваша памятка!")
+    except:
+        bot.send_message(message.chat.id, "Произошла ошибка")
 
 
 if __name__ == "__main__":
